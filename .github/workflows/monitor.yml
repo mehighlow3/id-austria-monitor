@@ -1,0 +1,42 @@
+name: ID Austria Slot Monitor
+
+on:
+  schedule:
+    - cron: "*/5 * * * *"
+  workflow_dispatch:
+
+jobs:
+  check-slots:
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: "pip"
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Restore seen slots state
+        uses: actions/cache/restore@v4
+        with:
+          path: seen_slots.json
+          key: seen-slots-${{ github.run_id }}
+          restore-keys: |
+            seen-slots-
+
+      - name: Check ID Austria appointment availability
+        run: python monitor.py --once --state-file seen_slots.json
+
+      - name: Save seen slots state
+        if: always()
+        uses: actions/cache/save@v4
+        with:
+          path: seen_slots.json
+          key: seen-slots-${{ github.run_id }}

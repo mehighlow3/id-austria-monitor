@@ -1,0 +1,48 @@
+{
+  "poll_interval_seconds": 90,
+  "exclude_dates": {
+    "start": "2026-12-07",
+    "end": "2026-12-11"
+  },
+  "max_date": "2027-02-28",
+  "lpd": {
+    "enabled": true,
+    "bundesland": 9,
+    "tag_id": 6,
+    "office_ids": []
+  },
+  "finanzamt": {
+    "enabled": true,
+    "skill_id": 54,
+    "include_vienna": true,
+    "extra_location_ids": [],
+    "lookahead_days": 90
+  },
+  "notifications": {
+    "console": true,
+    "windows_beep": true,
+    "windows_toast": true,
+    "email": {
+      "enabled": false,
+      "smtp_host": "smtp.gmail.com",
+      "smtp_port": 587,
+      "username": "your.email@gmail.com",
+      "password": "your-16-char-app-password",
+      "from_addr": "your.email@gmail.com",
+      "to_addr": "your.email@gmail.com"
+    },
+    "ntfy": {
+      "enabled": true,
+      "topic_url": "https://ntfy.sh/IDaustria"
+    },
+    "telegram": {
+      "enabled": false,
+      "bot_token": "",
+      "chat_id": ""
+    },
+    "discord": {
+      "enabled": false,
+      "webhook_url": ""
+    }
+  }
+}
