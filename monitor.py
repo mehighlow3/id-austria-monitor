@@ -519,6 +519,18 @@ def main() -> int:
         default=None,
         help="Optional JSON file to persist seen slot keys across --once runs (e.g. GitHub Actions)",
     )
+    parser.add_argument(
+        "--interval",
+        type=int,
+        default=None,
+        help="Override poll_interval_seconds from config.json",
+    )
+    parser.add_argument(
+        "--duration-seconds",
+        type=int,
+        default=None,
+        help="Run continuously for at most this many seconds, then exit cleanly (useful for CI/Actions)",
+    )
     args = parser.parse_args()
 
     logging.basicConfig(
@@ -532,6 +544,12 @@ def main() -> int:
         return 1
 
     cfg = load_config(args.config)
+
+    env_ntfy = os.environ.get("NTFY_TOPIC_URL")
+    if env_ntfy:
+        cfg.setdefault("notifications", {}).setdefault("ntfy", {})
+        cfg["notifications"]["ntfy"]["enabled"] = True
+        cfg["notifications"]["ntfy"]["topic_url"] = env_ntfy
 
     if args.test_notify:
         dummy = AppointmentSlot(
@@ -548,7 +566,10 @@ def main() -> int:
     exclude_start = parse_date(ex.get("start"))
     exclude_end = parse_date(ex.get("end"))
     max_date = parse_date(args.max_date or cfg.get("max_date"))
-    poll_interval = int(cfg.get("poll_interval_seconds", 90))
+    poll_interval = int(args.interval or cfg.get("poll_interval_seconds", 90))
+    run_deadline = (
+        time.monotonic() + args.duration_seconds if args.duration_seconds else None
+    )
 
     lpd_cfg = cfg.get("lpd", {})
     fa_cfg = cfg.get("finanzamt", {})
@@ -672,10 +693,23 @@ def main() -> int:
         if args.once:
             return 0
 
+        if run_deadline is not None:
+            remaining = run_deadline - time.monotonic()
+            if remaining <= 0:
+                logging.info("Reached duration limit (%ds); exiting cleanly.", args.duration_seconds)
+                return 0
+            sleep_sec = min(poll_interval, remaining)
+        else:
+            sleep_sec = poll_interval
+
         try:
-            time.sleep(poll_interval)
+            time.sleep(sleep_sec)
         except KeyboardInterrupt:
             logging.info("Stopped by user.")
+            return 0
+
+        if run_deadline is not None and time.monotonic() >= run_deadline:
+            logging.info("Reached duration limit (%ds); exiting cleanly.", args.duration_seconds)
             return 0
 
 

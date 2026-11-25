@@ -5,10 +5,14 @@ on:
     - cron: "*/5 * * * *"
   workflow_dispatch:
 
+concurrency:
+  group: id-austria-monitor
+  cancel-in-progress: false
+
 jobs:
   check-slots:
     runs-on: ubuntu-latest
-    timeout-minutes: 3
+    timeout-minutes: 8
 
     steps:
       - name: Checkout repository
@@ -31,8 +35,8 @@ jobs:
           restore-keys: |
             seen-slots-
 
-      - name: Check ID Austria appointment availability
-        run: python monitor.py --once --state-file seen_slots.json
+      - name: Poll ID Austria slots every 60s for 4.5 minutes
+        run: python monitor.py --interval 60 --duration-seconds 270 --state-file seen_slots.json
 
       - name: Save seen slots state
         if: always()
